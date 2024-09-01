@@ -1,0 +1,72 @@
+swagger: "2.0"
+info:
+  title: Best Practice Api
+  description: Наследование моделей (походит на наследование классов в ООП).
+  version: 1.0.0
+
+tags:
+  - name: ModelInheritance
+
+paths:
+  /model-inheritance:
+    post:
+      operationId: modelInheritance
+      tags:
+        - ModelInheritance
+      parameters:
+        - name: body
+          description: Указывается родительская модель. Указывая ее, нужно понимать, что в качестве параметра ожидается одна из дочерних моделей (`ModelInheritanceChild1` или `ModelInheritanceChild2`)
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ModelInheritanceParent'
+      responses:
+        200:
+          description: Указывается родительская модель. Указывая ее, нужно понимать, что в качестве ответа ожидается одна из дочерних моделей (`ModelInheritanceChild1` или `ModelInheritanceChild2`)
+          schema:
+            $ref: '#/definitions/ModelInheritanceParent'
+
+definitions:
+  ModelInheritanceParent:
+    type: object
+    description: Родительская модель (абстрактный класс)
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+      objectType:
+        type: string
+        description: |
+          - Поле-дискриминатор. Название этого поля **обязательно** нужно указать в `discriminator`
+          - Должен быть enum, значения которого - названия дочерних моделей
+          - Лучше называть objectType, т.к. другие названия могут пересекаться с какими-то названиями из бизнес-логики
+          - Обязательное свойство
+        enum:
+          - ModelInheritanceChild1
+          - ModelInheritanceChild2
+    discriminator: objectType
+    required:
+      - id
+      - title
+      - objectType
+
+  ModelInheritanceChild1:
+    description: |
+      - Дочерняя модель
+      - Наследование реализуется за счет `allOf`
+    allOf:
+      - $ref: '#/definitions/ModelInheritanceParent'
+      - properties:
+          child1Property:
+            type: string
+
+  ModelInheritanceChild2:
+    description: |
+      - Дочерняя модель
+      - Наследование реализуется за счет `allOf`
+    allOf:
+      - $ref: '#/definitions/ModelInheritanceParent'
+      - properties:
+          child2Property:
+            type: string

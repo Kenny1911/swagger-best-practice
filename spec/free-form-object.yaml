@@ -1,0 +1,14 @@
+swagger: "2.0"
+info:
+  title: Free form object
+  version: 1.0.0
+
+paths: {}
+
+definitions:
+  FreeFormObject:
+    type: object
+    additionalProperties: true
+    description: |
+      Объект, который может иметь любую форму, в него можно записывать любые данные
+      Не рекомендуется часто использовать такие объекты.

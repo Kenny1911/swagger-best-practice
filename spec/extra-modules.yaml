@@ -1,0 +1,104 @@
+swagger: "2.0"
+info:
+  title: Extra modules
+  description: |
+    Для модульных систем необходимо, чтоб данные возвращались в зависимости от того, какие модули подключены в системе.
+    Самым простым решением в этом случае является использование напрямую api этого модуля. Однако в этом случае возникает ряд проблем:
+    1. Придется совершать **дополнительный запрос** к api модуля, после чего сопоставлять данные.
+    2. **Невозможно фильтровать данные**, используя одновременно текущий и сторонний модули.
+    Можно конечно для модулей выделить Free-Form Object, и в него уже все данные записывать. Однако тогда клиенту никогда не будет известно, какие данные ожидать при получении. Т.е. теряется основное преимущество Swagger.
+    Поэтому лучшее решение этой проблемы - чтоб api знал о других модулях. Это нарушает принцип единой ответственности, но зато четко определяет api. Меньшее из зол.
+    Такой подход нужно использовать только для получение данных. Для модификации данных нужно использовать api модуля.
+  version: 1.0.0
+tags:
+  - name: ExtraModule
+
+paths:
+  /extra-module/entities:
+    get:
+      operationId: listEntitiesWithExtraModule
+      tags:
+        - ExtraModule
+      description: |
+        Получение моделей, которые могут содержать данные из других модулей
+      parameters:
+        - name: title
+          in: query
+          type: string
+        - name: modules
+          description: |
+            Опциональный параметр, с помощью которого можно указать, из каких модулей дополнительно нужно получить данные
+            Если параметр не указывать, то вернутся только основные данные, а фильтрации для сторонних модулей не применятся
+            Если указывается модуль, который не включен, то должна возвращаться ошибка
+            Использование этого параметра не обязательно, можно вполне обойтись и без него
+          in: query
+          type: array
+          items:
+            type: string
+            enum:
+              - moduleA
+        - name: moduleATitle
+          in: query
+          type: string
+          description: |
+            Параметр для фильтрации данных из модуля A
+            Если модуль A выключен, то параметр должен игнорироваться
+      responses:
+        200:
+          description: Результат поиска
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ExtraModuleEntity'
+
+  /extra-module/entity/{id}:
+    get:
+      operationId: getEntityWithExtraModule
+      tags:
+        - ExtraModule
+      description: Получение модели, которая может сожержать данные их других модулей
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: modules
+          in: query
+          type: array
+          items:
+            type: string
+            enum:
+              - moduleA
+      responses:
+        200:
+          description: Возвращает отдельную модель сущности
+          schema:
+            $ref: '#/definitions/ExtraModuleEntity'
+
+definitions:
+  ExtraModuleEntity:
+    type: object
+    description: |
+      Модель, которая может содержать данные из других модулей
+      Свойство `moduleA` содержит данные из дополнительного модуля A. Это свойство не должно быть обязательным. Если модуль A не включен, то это свойство не должно заполниться.
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+      moduleA:
+        $ref: '#/definitions/ExtraModuleEntityModuleA'
+    required:
+      - id
+      - title
+
+  ExtraModuleEntityModuleA:
+    type: object
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+    required:
+      - id
+      - title

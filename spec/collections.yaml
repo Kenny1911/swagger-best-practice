@@ -1,0 +1,89 @@
+swagger: "2.0"
+info:
+  title: Collections
+  description: |
+    Работа с To-Many ассоциациями
+    Т.к. связанных объектов может быть много, имеет смысл предоставить возможность работать с ними, как с коллекциями:
+    - получать срез
+    - добавлять в коллекцию
+    - удалять из коллекции
+  version: 1.0.0
+tags:
+  - name: Collection
+
+paths:
+  # Collection
+  /some-entity/{id}/collection:
+    get:
+      operationId: listSomeEntityCollection
+      description: |
+        Получение списка элементов коллекции
+        Опционально может поддерживаться фильтрация и сортировка
+      tags:
+        - Collection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: offset
+          in: query
+          type: integer
+          minimum: 0
+          default: 0
+        - name: limit
+          in: query
+          type: integer
+          minimum: 0
+          default: 10
+      responses:
+        200:
+          description: Список с результатами
+          schema:
+            $ref: './data-list.yaml#/definitions/DataList'
+
+  /some-entity/{id}/collection/add:
+    patch:
+      operationId: addSomeEntityCollection
+      description: Добавление элементов в коллекцию по их id. Т.к. меняется часть коллекции, используется метод PATCH
+      tags:
+        - Collection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: body
+          description: Массив с id элементов, которые надо добавить. Позволяет добавлять несколько элементов за раз
+          in: body
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        204:
+          description: Ничего не возвращает
+
+  /some-entity/{id}/collection/remove:
+    patch:
+      operationId: removeSomeEntityCollection
+      description: Удаление элементов из коллекцию по их id. Т.к. меняется часть коллекции, используется метод PATCH
+      tags:
+        - Collection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: body
+          description: Массив с id элементов, которые надо удалить. Позволяет удалить несколько элементов за раз
+          in: body
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        204:
+          description: Ничего не возвращает

@@ -1,0 +1,224 @@
+swagger: "2.0"
+info:
+  title: REST
+  description: |
+    Принцип проектирования api, когда для чтения и записи используется одна модель
+    Плюсом данного подхода является то, что меньше моделей нужно определять. При этом не важно, какой уровень вложенности моделей
+    Удобен для простых CRUD операций
+    Однако, для api с более сложной логикой больше будет мешать, чем помогать
+    Readonly свойства нельзя делать обязательными. Следовательно, уже не совсем правильно будет
+  version: 1.0.0
+
+tags:
+  - name: REST
+
+paths:
+  /rests:
+    get:
+      operationId: getRestResources
+      tags:
+        - REST
+      parameters:
+        - name: offset
+          in: query
+          type: integer
+          minimum: 0
+          default: 0
+        - name: limit
+          in: query
+          type: integer
+          minimum: 0
+          default: 10
+      responses:
+        200:
+          description: List of resources
+          schema:
+            $ref: '#/definitions/ResourceList'
+
+    post:
+      operationId: createRestResource
+      tags:
+        - REST
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Resource'
+      responses:
+        201:
+          description: Created Rest Resource
+          schema:
+            $ref: '#/definitions/Resource'
+
+  /rest/{id}:
+    get:
+      operationId: getRestResource
+      tags:
+        - REST
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        200:
+          description: Rest resource
+          schema:
+            $ref: '#/definitions/Resource'
+
+    put:
+      operationId: editRestResource
+      tags:
+        - REST
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Resource'
+      responses:
+        200:
+          description: Edited Rest Resource
+          schema:
+            $ref: '#/definitions/Resource'
+
+    patch:
+      operationId: patchEditRestResource
+      tags:
+        - REST
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ResourcePatch'
+      responses:
+        200:
+          description: Edited Rest Resource
+          schema:
+            $ref: '#/definitions/Resource'
+
+    delete:
+      operationId: deleteRestResource
+      tags:
+        - REST
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        204:
+          description: No content
+
+definitions:
+  ResourceList:
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/Resource'
+      count:
+        type: integer
+        minimum: 0
+    required:
+      - items
+      - count
+
+  # Можно было Resource наследовать от ResourcePatch. В этом случае решается проблема дублирования. Однако, не известно, как
+  # в этом случае поведет себя генератор кода. Он может не совсем адекватно и оптимально сгенерировать наследуемый код.
+  Resource:
+    type: object
+    description: |
+      Resource может как наследоваться от ResourcePatch, так и просто повторять структуру.
+      Наследование решает проблему дублирования.
+      Однако, неизвестно, как поведет себя генератор кода. Он может не совсем правильно и оптимально сгенерировать такой
+      код.
+      Поэтому в данном примере Resource не наследуется от ResourcePatch, а повторяет его структуру.
+    properties:
+      id:
+        type: string
+        readOnly: true
+      ownerId:
+        type: string
+        description: |
+          `createOnly` and `readOnly`
+          Свойство будет обязательно при создании и чтении. При редактировании оно будет проигнорировано.
+      title:
+        type: string
+      description:
+        type: string
+      nestedSimple:
+        $ref: '#/definitions/NextedSimple'
+      nestedInheritance:
+        $ref: '#/definitions/NestedParent'
+      createdAt:
+        type: string
+        format: date-time
+        readOnly: true
+      updatedAt:
+        type: string
+        format: date-time
+        readOnly: true
+    required:
+      - title
+      - description
+
+  ResourcePatch:
+    type: object
+    description: |
+      Свойства не являются обязательными.
+      Эта модель будет использоваться исключительно для `PATCH` запроса.
+    properties:
+      title:
+        type: string
+      description:
+        type: string
+      nestedSimple:
+        $ref: '#/definitions/NextedSimple'
+      nestedInheritance:
+        $ref: '#/definitions/NestedParent'
+
+  NextedSimple:
+    type: object
+    description: Можно использовать любой уровень вложенности объектов. Это не приведет к сложностям
+    properties:
+      nested:
+        type: object
+        properties:
+          nested:
+            type: object
+            properties:
+              nested:
+                type: object
+
+  NestedParent:
+    type: object
+    properties:
+      objectType:
+        type: string
+        enum:
+          - NestedChild1
+          - NestedChild2
+    required:
+      - objectType
+
+  NestedChild1:
+    type: object
+    allOf:
+      - $ref: '#/definitions/NestedParent'
+
+  NestedChild2:
+    type: object
+    allOf:
+      - $ref: '#/definitions/NestedParent'

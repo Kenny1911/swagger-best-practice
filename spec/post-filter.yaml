@@ -1,0 +1,70 @@
+swagger: "2.0"
+info:
+  title: Best Practice Api
+  description: |
+    - Query строка по длине ограничена. Поэтому если передается много параметров, сервер может выкинуть ошибку `414 Request URL Too Long` 
+    - В отличие от GET метода, в POST методе в теле запроса можно передать гораздо больше данных
+    - Также в body нет ограничений на тип передаваемых значений. Можно передавать вложенные объекты, массивы объектов и т.д. Например, можно сделать сортировку по нескольким параметрам: `{"sort" : { "field1": "ASC", "field2": "DESC" } }` или `{"sort": [ {"field": "field1", "order": "ASC"}, {"field": "field2", "order": "DESC"} ] }`
+  version: 1.0.0
+
+tags:
+  - name: PostFilter
+
+paths:
+  /post-filter:
+    post:
+      operationId: postFilter
+      tags:
+        - PostFilter
+      parameters:
+        - name: body
+          in: body
+          description: body не должен быть обязательным, т.к. его параметры не обязательны для фильтрации
+          schema:
+            $ref: '#/definitions/PostFilter'
+      responses:
+        200:
+          description: Результаты фильтрации
+          schema:
+            $ref: './data-list.yaml#/definitions/DataList'
+
+definitions:
+  PostFilter:
+    type: object
+    description: |
+      - Модель для передачи параметров фильтрации в body
+      - Позволяет использовать более сложные структуры для фильтрации (объекты, вложенные объекты)
+      - Как и в случае с query параметрами, лучше свойства делать необязательными
+      - Свойства вложенных объектов напротив, можно делать обязательными
+    properties:
+      id:
+        type: array
+        items:
+          type: string
+      user:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Св-ва вложенных объектов можно делать обязательными
+        required:
+          - id
+      offset:
+        type: integer
+        minimum: 0
+        default: 0
+      limit:
+        type: integer
+        minimum: 0
+        default: 10
+      sort:
+        type: string
+        enum:
+          - id
+        default: id
+      order:
+        type: string
+        enum:
+          - ASC
+          - DESC
+        default: ASC

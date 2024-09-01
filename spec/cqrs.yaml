@@ -1,0 +1,292 @@
+swagger: "2.0"
+info:
+  title: CQRS
+  description: |
+    Принцип проектирования апи, при котором все методы разделяются на запросы (поиск, фильтрация, получение) и команды (создание, редактирование, удаление)
+    Для получения и записи информации используются **разные модели**. Их можно сделать как частично совпадающими, чтобы удобнее было сопоставлять поля, так и вообще не совпадающими.
+    Частично-совпадающие модели могут как наследоваться друг от друга через `allOf`, так и просто повторять друг друга.
+    В моделях не должно быть большой вложенности (желательно вообще без вложенности)
+    Если использовать вложенность, то придется для каждой операции много моделей проектировать. В будущем их сложно будет редактировать, возможны ошибки
+    В отличие от принципа REST, хорошо подходит для более сложных api, когда нужно как-то логически отделить разные операции
+    Для CQRS моделей нет смысла указывать `readOnly`, `writeOnly`, `createOnly` и прочие свойства, т.к. для каждой операции используется своя модель
+  version: 1.0.0
+
+tags:
+  - name: CQRS
+
+paths:
+  /cqrs/entities:
+    get:
+      operationId: listCQRSEntities
+      tags:
+        - CQRS
+      description: |
+        - Для фильтрации сущностей следует использовать HTTP GET метод
+        - Query параметры не должны быть обязательны
+        - list метод заканчивается на s, указывая на множественное значение. Также это позволит избежать проблем для таких роутов: `/entities`, `/entities/some-command` и `/entity/{id}`
+        - Для offset, limit, sort и order имеет смысл предусмотреть значения по умолчанию. Поэтому нет смысла делать эти
+        параметры обязательными.
+      parameters:
+        - name: ids
+          in: query
+          type: array
+          items:
+            type: string
+        - name: offset
+          description: |
+            - Минимальное значение должно быть 0, т.к. нельзя делать отрицательный отступ
+            - Значение по умолчанию должно быть 0, т.е. с начала списка
+          in: query
+          type: integer
+          minimum: 0
+          default: 0
+        - name: limit
+          description: |
+            - Минимальное значение, как и в случае с offset должно быть 0
+          in: query
+          type: integer
+          minimum: 0
+          default: 10
+        - name: sort
+          description: |
+            - Должен быть enum, чтобы знать, по каким полям можно сортировать
+          in: query
+          type: string
+          enum:
+            - id
+          default: id
+        - name: order
+          description: |
+            - Должен быть enum. Всегда есть только значения ASC и DESC
+          in: query
+          type: string
+          enum:
+            - ASC
+            - DESC
+          default: ASC
+      responses:
+        200:
+          description: Entities list
+          schema:
+            $ref: '#/definitions/CQRSEntityList'
+
+    post:
+      operationId: createCQRSEntity
+      tags:
+        - CQRS
+      description: |
+        - Для создания нужно использовать тот же роут, что и для списка сущностей, то использовать HTTP метод POST
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/CQRSEntityCreate'
+      responses:
+        201:
+          description: |
+            - Метод создания должен возвращать 201 код вместо 200.
+            - В данном примере метод возвращает модель сущности
+            - По правилам CQRS команда ничего не должна возвращать. Однако, удобнее, когда api метод возвращает данные, чтоб не получать их отдельным запросом.
+            - Однако, если команда выполняется в фоне и невозможно сразу вернуть ответ, имеет смысл возвращать пустой ответ со статусом 204
+          schema:
+            $ref: '#/definitions/CQRSEntity'
+
+  /cqrs/entity/{id}:
+    get:
+      operationId: getCQRSEntity
+      tags:
+        - CQRS
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        200:
+          description: Возвращает отдельную модель сущности
+          schema:
+            $ref: '#/definitions/CQRSEntity'
+
+    put:
+      operationId: editCQRSEntity
+      description: Редактирование сущности
+      tags:
+        - CQRS
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/CQRSEntityEdit'
+      responses:
+        200:
+          description: Возвращает модель отредактированной сущности
+          schema:
+            $ref: '#/definitions/CQRSEntity'
+
+    patch:
+      operationId: editPatchCQRSEntity
+      description: |
+        Частичное редактировние сущности
+        Следует использовать такой метод только в том случае, если сервер умеет определять, было ли свойство отправлено
+        В JavaScript значения `null` и `undefined` разные. Однако так не во всех языках. Поэтому, получается нерешаемая задача, как понять, было ли передано значение `null` или значение вовсе не было передано.
+        Если на сервере не реализовано это, то лучше воздержаться от PATCH методов и ограничиться PUT методами
+      tags:
+        - CQRS
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/CQRSEntityPatchEdit'
+      responses:
+        200:
+          description: Возвращает модель отредактированной сущности
+          schema:
+            $ref: '#/definitions/CQRSEntity'
+
+    delete:
+      operationId: deleteCQRSEntity
+      description: Удаление сущности
+      tags:
+        - CQRS
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        204:
+          description: Код 204, т.к. запрос ничего не должен возвращать
+
+  /cqrs/entities/some-command-or-query:
+    get:
+      operationId: someCommandSQRSEntitiesMany
+      description: Какая-то команда или запрос, который применяется сразу для нескольких или всех сущностей
+      tags:
+        - CQRS
+      responses:
+        200:
+          description: Ответ команды или запроса
+
+  /cqrs/entity/{id}/some-command-or-query:
+    get:
+      operationId: someCommandSQRSEntity
+      description: Какая-то команда или запрос, который применяется к одной сущности
+      tags:
+        - CQRS
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        200:
+          description: Ответ команды или запроса
+
+definitions:
+  CQRSEntityList:
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/CQRSEntity'
+      count:
+        type: integer
+        minimum: 0
+    required:
+      - items
+      - count
+
+  CQRSEntity:
+    type: object
+    description: Модель для получения информации о сущности
+    properties:
+      id:
+        type: string
+        description: |
+          - Для id полей всегда нужно ставить `string`, даже если приходит число
+          - id всегда должен быть обязательным
+      title:
+        type: string
+      description:
+        type: string
+      user:
+        type: object
+        description: |
+          - Вложенный объект
+          - Для необязательных 
+          - Если связь не была прикреплена, то должен возвращаться `undefined`
+          - В read моделях можно показывать, если связь To-One
+          - Для To-Many связей лучше использовать коллекции, чтобы не перегружать объект, т.к. таких связей может быть много
+        properties:
+          id:
+            type: string
+        required:
+          - id
+      userId:
+        type: string
+        description: |
+          - Можно дублировать id связанной модели, чтобы объект можно было сопоставить с write моделями
+          - Добавлять данное свойство нужно только в том случае, если хочется сделать сопоставимость с write моделями. В противном случае оно не будет нести какой-то пользы
+      deprecatedProperty:
+        type: string
+        description: |
+          `DEPRECATED`
+          - т.к. нет возможности нативно указывать deprecated свойства, лучше это делать в описании
+          - Также дополнительно можно указывать через `x-` св-ва, например `x-deprecated` равным `true`. Но Swagger UI этого не отобразит. Может быть полезно разве что для генератора кода
+        x-deprecated: true
+    required:
+      - id
+      - title
+      - user
+      - userId
+
+  CQRSEntityCreate:
+    type: object
+    description: Модель для создания сущности
+    properties:
+      title:
+        type: string
+      description:
+        type: string
+      userId:
+        type: string
+        description: Обязательно только для создания
+    required:
+      - title
+      - userId
+
+  CQRSEntityEdit:
+    type: object
+    description: Модель для редактирования сущности (в методах PUT)
+    properties:
+      title:
+        type: string
+        description: Т.к. метод PUT, значение обязательно
+      description:
+        type: string
+    required:
+      - title
+
+  CQRSEntityPatchEdit:
+    type: object
+    description: |
+      - Модель для частичного редактирования (в методах PATCH)
+      - Не должно иметь ни одного обязательного свойства, иначе теряется сам смысл PATCH метода
+    properties:
+      title:
+        type: string
+      description:
+        type: string
+

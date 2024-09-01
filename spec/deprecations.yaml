@@ -1,0 +1,66 @@
+swagger: "2.0"
+info:
+  title: Deprecations
+  description: |
+    Описание для deprecated элементов api
+    Со временем api или его части начинают устаревать. Однако, **ни в коем случае нельзя** из api *ничего удалять**,
+    поскольку это может нарушить обратную совместимость. Этот момент особенно важен, если api используют сторонние
+    клиенты.
+    Можно только помечать, как deprecated. При этом нативно пометить deprecated можно только endpoint. Для остальных
+    частей придется использовать комментарии.
+    Если какие-то deprecated части необходимо выключать (например, если дело касается производительности), то это
+    следует делать через специальные флаги, которые по-умолчанию должны быть выключены.
+  version: 1.0.0
+
+paths:
+  /deprecated:
+    get:
+      operationId: deprecatedEndpoint
+      deprecated: true
+      description: Объявление deprecated поддерживается нативно для endpoint
+      parameters:
+        - name: deprecatedParameter
+          description: |
+            `deprecated`
+            Объявление deprecated происходит через комментарии
+          type: string
+          in: query
+        - name: useDeprecatedProperty
+          description: |
+            Специальный флаг, указывающий на то, что необходимо использовать свойство `useDeprecatedProperty` из ответа
+            сервера.
+            Обязательно должно иметь значение по-умолчанию `true` для обеспечения обратной совместимости.
+          type: boolean
+          in: query
+          default: true
+        - name: disableDeprecatedProperty
+          description: |
+            То же самое, что и параметр `useDeprecatedProperty`, только работает в обратную сторону.
+            Соответственно, обязательно должно иметь значение по-умолчанию `true` для обеспечения обратной совместимости.
+            > Не надо использовать оба параметра `useDeprecatedProperty` и `disableDeprecatedProperty` сразу.
+          type: boolean
+          in: query
+          default: false
+      responses:
+        200:
+          description: Response
+          schema:
+            $ref: '#/definitions/DeprecatedModel'
+
+definitions:
+  DeprecatedModel:
+    type: object
+    description: |
+      `deprecated`
+      Объявление deprecated происходит через комментарии
+    properties:
+      title:
+        type: string
+      deprecatedProperty:
+        type: object
+        description: |
+          `deprecated`
+          Объявление deprecated происходит через комментарии
+    required:
+      - title
+      - deprecatedProperty

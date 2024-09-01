@@ -1,0 +1,27 @@
+swagger: "2.0"
+info:
+  title: Data List
+  version: 1.0.0
+
+paths: {}
+
+definitions:
+  DataList:
+    type: object
+    description: |
+      Шаблон модели, предназначенной для возврата массива с частью данных (range) из общей коллекции
+      Используется в list и filter методах
+    properties:
+      items:
+        type: array
+        description: Массив элементов
+        items:
+          type: object
+          description: Описание элемента массива.
+      count:
+        type: integer
+        description: Общее кол-во элементов в коллекции (не только данного среза)
+        minimum: 0
+    required:
+      - items
+      - count
