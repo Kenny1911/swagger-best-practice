@@ -1,0 +1,24 @@
+version: '3.9'
+
+services:
+  swagger-ui:
+    image: "${SWAGGER_UI_IMAGE:-swaggerapi/swagger-ui:v5.17.14}"
+    volumes:
+      - "./spec:/usr/share/nginx/html/spec:ro"
+    environment:
+      URLS: |
+        [
+          {"url": "/spec/rest.yaml", "name": "REST"},
+          {"url": "/spec/cqrs.yaml", "name": "CQRS"},
+          {"url": "/spec/data-list.yaml", "name": "Data List"},
+          {"url": "/spec/free-form-object.yaml", "name": "Free-form object"},
+          {"url": "/spec/collections.yaml", "name": "Collections"},
+          {"url": "/spec/inheritance.yaml", "name": "Mode inheritance"},
+          {"url": "/spec/post-filter.yaml", "name": "Filter data with POST method"},
+          {"url": "/spec/extra-modules.yaml", "name": "Extra modules"},
+          {"url": "/spec/deprecations.yaml", "name": "Deprecations"},
+        ]
+      URLS_PRIMARY_NAME: REST
+      QUERY_CONFIG_ENABLED: 1
+    ports:
+      - "${PORT:-127.0.0.1:8080}:8080"
